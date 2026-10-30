@@ -78,6 +78,8 @@ final class enrol_test extends \advanced_testcase {
         $suspended = $gen->create_and_enrol($course, 'student');
         $DB->set_field('user', 'suspended', 1, ['id' => $suspended->id]);
         $instance = $DB->get_record('enrol', ['courseid' => $course->id, 'enrol' => 'manual'], '*', MUST_EXIST);
+        // Enrolling sends a course welcome message, which the guest account cannot receive.
+        $this->redirectMessages();
         enrol_get_plugin('manual')->enrol_user(
             $instance,
             $CFG->siteguest,
