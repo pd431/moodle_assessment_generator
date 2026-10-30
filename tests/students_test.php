@@ -130,7 +130,7 @@ final class students_test extends \advanced_testcase {
     }
 
     public function test_run_creates_safe_accounts_that_take_part_and_purge_deletes_them(): void {
-        global $CFG, $DB;
+        global $DB;
         $this->resetAfterTest();
         $this->setAdminUser();
         ['courses' => $courses, 'students' => $existing] = $this->make_courses([3, 0, 0, 0]);

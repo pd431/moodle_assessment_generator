@@ -456,7 +456,7 @@ class run_manager {
     protected static function build(\stdClass $course, array $assessment, options $options, bool $outer): array {
         // No outer transaction: the log store only writes events once the outermost transaction commits, which
         // would be too late to backdate them.
-        for ($attempt = 1; ; $attempt++) {
+        for ($attempt = 1;; $attempt++) {
             try {
                 // Submission receipts would put one notification per submission in students' inboxes.
                 return settings_override::with(

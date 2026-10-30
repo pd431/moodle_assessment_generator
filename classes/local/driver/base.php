@@ -130,8 +130,8 @@ abstract class base {
             'completionexpected' => 0,
             'completionpassgrade' => 0,
         ], $settings);
-        // build() holds the course's lock, so parts of a run add modules to a course one at a time, which keeps
-        // the course's section sequences and grade item order intact. Tags are shared site-wide, so they are
+        // The course's lock is held by build(), so parts of a run add modules to a course one at a time, which
+        // keeps the course's section sequences and grade item order intact. Tags are shared site-wide, so they are
         // locked too.
         $moduleinfo = add_moduleinfo($moduleinfo, $course);
         // Where a busy database fails while the activity is half made; tests arm faults here.

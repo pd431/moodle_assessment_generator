@@ -401,8 +401,12 @@ final class types_test extends \advanced_testcase {
         $recorded = 0;
         foreach ($plan['assessments'] as $a) {
             $this->assertTrue($a['allocation']);
-            $instance = $DB->get_field('course_modules', 'instance', ['course' => $course->id, 'idnumber' => $a['idnumber']],
-                MUST_EXIST);
+            $instance = $DB->get_field(
+                'course_modules',
+                'instance',
+                ['course' => $course->id, 'idnumber' => $a['idnumber']],
+                MUST_EXIST
+            );
             foreach ($a['units'] as $u) {
                 if (!$u['allocatedmarker']) {
                     continue;
@@ -412,8 +416,11 @@ final class types_test extends \advanced_testcase {
                     $this->assertTrue($DB->record_exists('assign_allocated_marker', ['assignment' => $instance,
                         'student' => $u['userid'], 'marker' => $u['allocatedmarker']]), "Marker of user {$u['userid']}");
                 } else {
-                    $this->assertEquals($u['allocatedmarker'], $DB->get_field('assign_user_flags', 'allocatedmarker',
-                        ['assignment' => $instance, 'userid' => $u['userid']]), "Marker of user {$u['userid']}");
+                    $this->assertEquals($u['allocatedmarker'], $DB->get_field(
+                        'assign_user_flags',
+                        'allocatedmarker',
+                        ['assignment' => $instance, 'userid' => $u['userid']]
+                    ), "Marker of user {$u['userid']}");
                 }
                 $recorded++;
             }
