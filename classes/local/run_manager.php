@@ -526,12 +526,47 @@ class run_manager {
     }
 
     /**
-     * Bring a run's progress and status up to date with its parts.
+     * Mark the parts whose worker died as failed, so nothing waits for them and the run can be resumed.
+     *
+     * A part is "running" only while its worker holds the part's lock, so a running part whose lock can be taken
+     * belongs to a process that ended without recording anything: killed, out of memory, or cut off from the
+     * database. The status is read again inside the lock, so a part that finished in the meantime is left alone.
+     *
+     * @param int $runid
+     * @return int how many parts were marked failed
+     */
+    public static function reap_dead_parts(int $runid): int {
+        global $DB;
+        $dead = 0;
+        foreach ($DB->get_records('tool_assessmentgen_part', ['runid' => $runid, 'status' => 'running']) as $row) {
+            $key = "part-$runid-{$row->courseid}-{$row->part}";
+            if (locks::held($key)) {
+                // This process is its worker.
+                continue;
+            }
+            locks::try($key, function () use ($DB, $runid, $row, &$dead) {
+                if ($DB->get_field('tool_assessmentgen_part', 'status', ['id' => $row->id]) !== 'running') {
+                    return;
+                }
+                $shortname = $DB->get_field('course', 'shortname', ['id' => $row->courseid]) ?: "course {$row->courseid}";
+                $message = get_string('workerdied', 'tool_assessmentgen', (object)['course' => $shortname,
+                    'part' => $row->part + 1]);
+                self::set_part($row->id, 'failed', $message);
+                $DB->set_field('tool_assessmentgen_run', 'error', $message, ['id' => $runid]);
+                $dead++;
+            });
+        }
+        return $dead;
+    }
+
+    /**
+     * Bring a run's progress and status up to date with its parts, after marking parts whose worker died as failed.
      *
      * @param int $runid
      */
-    protected static function refresh_status(int $runid): void {
+    public static function refresh_status(int $runid): void {
         global $DB;
+        self::reap_dead_parts($runid);
         $counts = self::part_counts($runid);
         $done = $counts['done'] ?? 0;
         $total = array_sum($counts);

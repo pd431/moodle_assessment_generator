@@ -24,6 +24,20 @@ namespace tool_assessmentgen\local;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class locks {
+    /** @var array<string, int> Keys this process holds right now, with how many times each is held. */
+    protected static array $held = [];
+
+    /**
+     * Whether this process holds $key right now. Lock factories differ on whether a process may take a lock it
+     * already holds, so the question is answered here rather than by trying the lock.
+     *
+     * @param string $key
+     * @return bool
+     */
+    public static function held(string $key): bool {
+        return !empty(self::$held[$key]);
+    }
+
     /**
      * Run $fn while holding the lock $key, waiting up to $timeout seconds for it.
      *
@@ -37,9 +51,11 @@ class locks {
         if (!$lock) {
             throw new \moodle_exception('lockbusy', 'tool_assessmentgen', '', $key);
         }
+        self::$held[$key] = (self::$held[$key] ?? 0) + 1;
         try {
             return $fn();
         } finally {
+            self::$held[$key]--;
             $lock->release();
         }
     }
@@ -56,10 +72,12 @@ class locks {
         if (!$lock) {
             return false;
         }
+        self::$held[$key] = (self::$held[$key] ?? 0) + 1;
         try {
             $fn();
             return true;
         } finally {
+            self::$held[$key]--;
             $lock->release();
         }
     }

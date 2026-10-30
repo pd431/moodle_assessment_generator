@@ -273,6 +273,7 @@ class purger {
 
     /**
      * Wait for parts that are building an assessment to finish it. A part notices the purge between assessments.
+     * A part whose worker died is marked failed and not waited for.
      *
      * @param int $runid
      * @param int $wait seconds
@@ -280,16 +281,10 @@ class purger {
     protected static function wait_for_parts(int $runid, int $wait): void {
         global $DB;
         $until = time() + $wait;
-        // A part marked running long ago belongs to a worker that died; it will not finish.
-        $stale = time() - 2 * HOURSECS;
-        while (
-            time() < $until && $DB->record_exists_select(
-                'tool_assessmentgen_part',
-                "runid = ? AND status = 'running' AND timemodified > ?",
-                [$runid, $stale]
-            )
-        ) {
+        run_manager::reap_dead_parts($runid);
+        while (time() < $until && $DB->record_exists('tool_assessmentgen_part', ['runid' => $runid, 'status' => 'running'])) {
             sleep(2);
+            run_manager::reap_dead_parts($runid);
         }
     }
 

@@ -17,6 +17,7 @@
 namespace tool_assessmentgen;
 
 use tool_assessmentgen\local\options;
+use tool_assessmentgen\local\purger;
 use tool_assessmentgen\local\run_manager;
 use tool_assessmentgen\local\testing;
 
@@ -92,5 +93,47 @@ final class failure_test extends \advanced_testcase {
         // The half-made activity was deleted too, so a resume starts clean.
         $this->assertSame(0, $DB->count_records('course_modules', ['course' => $course->id]));
         $this->assertSame(0, $DB->count_records('tool_assessmentgen_item', ['runid' => $run->id]));
+    }
+
+    public function test_a_part_whose_worker_died_is_failed_not_waited_for(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $course = $this->make_course('DEAD-202526');
+        $run = $this->queued_run('dead');
+        // What a killed worker leaves behind: the part says running, nobody holds its lock.
+        $DB->set_field('tool_assessmentgen_part', 'status', 'running', ['runid' => $run->id]);
+        $DB->set_field('tool_assessmentgen_run', 'status', 'running', ['id' => $run->id]);
+
+        run_manager::refresh_status((int)$run->id);
+        $part = $DB->get_record('tool_assessmentgen_part', ['runid' => $run->id, 'courseid' => $course->id, 'part' => 0]);
+        $this->assertSame('failed', $part->status);
+        $this->assertStringContainsString('worker ended without recording a result', $part->error);
+        $run = run_manager::get_by_tag('dead');
+        $this->assertSame('failed', $run->status, 'Nothing is running, so the run can be resumed');
+        $this->assertStringContainsString('Part 1 of DEAD-202526 failed', $run->error);
+
+        // A purge does not wait for it either.
+        $DB->set_field('tool_assessmentgen_part', 'status', 'running', ['runid' => $run->id]);
+        $start = time();
+        $report = purger::purge($run, 30);
+        $this->assertLessThan(10, time() - $start);
+        $this->assertSame([], $report['errors']);
+        $this->assertSame('purged', run_manager::get_by_tag('dead')->status);
+    }
+
+    public function test_a_running_part_whose_worker_holds_its_lock_is_left_alone(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $course = $this->make_course('LIVE-202526');
+        $run = $this->queued_run('live');
+        $DB->set_field('tool_assessmentgen_part', 'status', 'running', ['runid' => $run->id]);
+        // As the worker itself sees it while it holds the part's lock.
+        \tool_assessmentgen\local\locks::with("part-{$run->id}-{$course->id}-0", function () use ($run) {
+            $this->assertSame(0, run_manager::reap_dead_parts((int)$run->id));
+            $this->assertSame(['running' => 1], run_manager::part_counts((int)$run->id));
+        });
+        $this->assertSame(1, run_manager::reap_dead_parts((int)$run->id));
     }
 }

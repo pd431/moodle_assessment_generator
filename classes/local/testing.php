@@ -102,10 +102,7 @@ class testing {
             case self::FAULT_DMLWRITE:
                 throw new \dml_write_exception("fault: $point", 'INSERT', []);
             case self::FAULT_LOCKCHECK:
-                $key = 'course-' . ($context['courseid'] ?? 0);
-                // The database lock factory is not re-entrant, so a lock this process holds cannot be taken again.
-                $free = locks::try($key, fn() => null);
-                self::observe($point, ['courselockheld' => !$free]);
+                self::observe($point, ['courselockheld' => locks::held('course-' . ($context['courseid'] ?? 0))]);
                 return;
         }
     }

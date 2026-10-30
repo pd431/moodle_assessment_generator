@@ -121,6 +121,7 @@ $string['statuspurging'] = 'Purging';
 $string['statusqueued'] = 'Queued';
 $string['statusrunning'] = 'Running';
 $string['statusstopped'] = 'Stopped';
+$string['workerdied'] = 'Part {$a->part} of {$a->course} failed: its worker ended without recording a result (killed, out of memory, or cut off from the database). Resume to run it again.';
 $string['statusstopping'] = 'Stopping: {$a} parts finishing their current assessment';
 $string['stop'] = 'Stop';
 $string['stopdone'] = 'Run {$a} stopped. Parts building an assessment finish that one and stop; everything made so far stays.';

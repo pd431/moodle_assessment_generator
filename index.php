@@ -221,6 +221,11 @@ if ($runs) {
         get_string('progress', 'tool_assessmentgen'), 'Assessments', 'Submissions', 'Marks', 'Extensions',
         get_string('seed', 'tool_assessmentgen'), ''];
     foreach ($runs as $run) {
+        if (in_array($run->status, ['queued', 'running', 'stopped', 'failed'])) {
+            // Parts whose worker died show as failed, and a run with nothing left running can be resumed.
+            run_manager::refresh_status((int)$run->id);
+            $run = $DB->get_record('tool_assessmentgen_run', ['id' => $run->id], '*', MUST_EXIST);
+        }
         $t = run_manager::totals((int)$run->id);
         $parts = run_manager::part_counts((int)$run->id);
         $status = get_string('status' . $run->status, 'tool_assessmentgen');
