@@ -199,18 +199,25 @@ class assign extends base {
      * @return bool
      */
     public static function multimarker(): bool {
-        return method_exists(\assign::class, 'update_allocated_markers');
+        return method_exists(\assign::class, 'update_marker_allocations') ||
+            method_exists(\assign::class, 'update_allocated_markers');
     }
 
     /**
-     * Allocate a marker to a student.
+     * Allocate a marker to a student, as the first (required) marker.
      *
      * @param \assign $assign
      * @param int $studentid
      * @param int $markerid
      */
     protected static function allocate(\assign $assign, int $studentid, int $markerid): void {
+        if (method_exists(\assign::class, 'update_marker_allocations')) {
+            // Moodle 5.3 and later: allocations keyed by marker position, as [markerid, enabled].
+            $assign->update_marker_allocations($studentid, [1 => [$markerid, 1]]);
+            return;
+        }
         if (self::multimarker()) {
+            // Moodle 5.1 and 5.2.
             $assign->update_allocated_markers($studentid, [$markerid]);
             return;
         }
