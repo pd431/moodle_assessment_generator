@@ -217,6 +217,7 @@ class run_manager {
             if (!self::needs_setup($options) || !self::active($runid)) {
                 return;
             }
+            $outer = transactions::open();
             try {
                 $created = course_factory::create($options, $progress);
                 $values = $options->to_array();
@@ -239,6 +240,7 @@ class run_manager {
                 // Accounts too, so the first parts do not all queue on the pool lock.
                 student_pool::ensure($runid, options::from_json(json_encode($values)));
             } catch (\Throwable $e) {
+                transactions::rollback_open($outer);
                 $DB->update_record('tool_assessmentgen_run', (object)['id' => $runid, 'status' => 'failed',
                     'error' => get_string('setupfailed', 'tool_assessmentgen', $e->getMessage()), 'timemodified' => time()]);
                 throw $e;
@@ -358,15 +360,17 @@ class run_manager {
             return $totals;
         }
         locks::try("part-$runid-$courseid-$part", function () use ($DB, $runid, $courseid, $part, $row, &$totals) {
+            $outer = transactions::open();
             $run = $DB->get_record('tool_assessmentgen_run', ['id' => $runid], '*', MUST_EXIST);
             $DB->set_field_select('tool_assessmentgen_run', 'status', 'running', "id = ? AND status = 'queued'", [$runid]);
             self::set_part($row->id, 'running');
-            $options = self::options_for($run);
-            $types = registry::available($options->types);
-            $course = get_course($courseid);
-            $first = $part * $options->partsize + 1;
-            $last = ($part + 1) * $options->partsize;
+            $course = null;
             try {
+                $options = self::options_for($run);
+                $types = registry::available($options->types);
+                $course = get_course($courseid);
+                $first = $part * $options->partsize + 1;
+                $last = ($part + 1) * $options->partsize;
                 student_pool::ensure($runid, $options);
                 // Each assessment is built as soon as it is planned, so only one is in memory at a time.
                 $groups = [];
@@ -384,6 +388,7 @@ class run_manager {
                     $options,
                     $first,
                     $last,
+                    $outer,
                     &$groups,
                     &$totals
 ) {
@@ -401,18 +406,7 @@ class run_manager {
                     if ($DB->record_exists('course_modules', ['course' => $courseid, 'idnumber' => $assessment['idnumber']])) {
                         return;
                     }
-                    // No outer transaction: the log store only writes events once the outermost transaction
-                    // commits, which would be too late to backdate them. A failure deletes the half-made activity.
-                    try {
-                        // Submission receipts would put one notification per submission in students' inboxes.
-                        $counts = settings_override::with(
-                            ['assign' => ['submissionreceipts' => 0]],
-                            fn() => registry::driver($assessment['type'])->execute($course, $assessment, $options)
-                        );
-                    } catch (\Throwable $e) {
-                        self::delete_partial($courseid, $assessment['idnumber']);
-                        throw $e;
-                    }
+                    $counts = self::build($course, $assessment, $options, $outer);
                     $DB->insert_record('tool_assessmentgen_item', (object)[
                         'runid' => $runid,
                         'courseid' => $courseid,
@@ -436,7 +430,8 @@ class run_manager {
                     self::set_part($row->id, $signal->getMessage() === 'stopped' ? 'stopped' : 'done');
                 }
             } catch (\Throwable $e) {
-                $message = $course->shortname . ' part ' . ($part + 1) . ': ' . $e->getMessage();
+                transactions::rollback_open($outer);
+                $message = ($course ? $course->shortname : "course $courseid") . ' part ' . ($part + 1) . ': ' . $e->getMessage();
                 self::set_part($row->id, 'failed', $message);
                 $DB->set_field('tool_assessmentgen_run', 'error', $message, ['id' => $runid]);
                 self::refresh_status($runid);
@@ -445,6 +440,34 @@ class run_manager {
             self::refresh_status($runid);
         });
         return $totals;
+    }
+
+    /**
+     * Build one assessment. A failure deletes the half-made activity before it is reported, so a retry starts
+     * clean.
+     *
+     * @param \stdClass $course
+     * @param array $assessment one entry of planner::plan_course()['assessments']
+     * @param options $options
+     * @param bool $outer whether a transaction was open before the part started (transactions::open())
+     * @return array{cmid: int, submitted: int, drafts: int, grades: int, extensions: int}
+     */
+    protected static function build(\stdClass $course, array $assessment, options $options, bool $outer): array {
+        // No outer transaction: the log store only writes events once the outermost transaction commits, which
+        // would be too late to backdate them.
+        try {
+            // Submission receipts would put one notification per submission in students' inboxes.
+            return settings_override::with(
+                ['assign' => ['submissionreceipts' => 0]],
+                fn() => registry::driver($assessment['type'])->execute($course, $assessment, $options)
+            );
+        } catch (\Throwable $e) {
+            // A failure inside core's add_moduleinfo() leaves its transaction open; nothing written before it is
+            // discarded would survive, including the deletion below and the part's failure.
+            transactions::rollback_open($outer);
+            self::delete_partial((int)$course->id, $assessment['idnumber']);
+            throw $e;
+        }
     }
 
     /**
