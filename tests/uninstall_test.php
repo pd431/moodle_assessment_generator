@@ -24,8 +24,8 @@ use tool_assessmentgen\local\run_manager;
  * @package    tool_assessmentgen
  * @copyright  2026
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \tool_assessmentgen\local\purger
  */
+#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\purger::class)]
 final class uninstall_test extends \advanced_testcase {
     public function test_uninstall_purges_every_run_first(): void {
         global $CFG, $DB;

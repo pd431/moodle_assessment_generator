@@ -26,10 +26,10 @@ use tool_assessmentgen\local\run_manager;
  * @package    tool_assessmentgen
  * @copyright  2026
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \tool_assessmentgen\local\planner
- * @covers     \tool_assessmentgen\local\options
- * @covers     \tool_assessmentgen\local\driver\base
  */
+#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\planner::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\options::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\driver\base::class)]
 final class tags_test extends \advanced_testcase {
     /** @var int Fixed "today". */
     protected const ANCHOR = 1790000000;

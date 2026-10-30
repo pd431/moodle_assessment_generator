@@ -28,11 +28,11 @@ use tool_assessmentgen\task\purge_run;
  * @package    tool_assessmentgen
  * @copyright  2026
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \tool_assessmentgen\local\run_manager
- * @covers     \tool_assessmentgen\local\purger
- * @covers     \tool_assessmentgen\task\generate_course
- * @covers     \tool_assessmentgen\task\purge_run
  */
+#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\run_manager::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\purger::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\task\generate_course::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\task\purge_run::class)]
 final class control_test extends \advanced_testcase {
     /** @var int Fixed "today". */
     protected const ANCHOR = 1790000000;

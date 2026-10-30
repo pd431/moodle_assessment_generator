@@ -27,10 +27,10 @@ use tool_assessmentgen\local\run_manager;
  * @package    tool_assessmentgen
  * @copyright  2026
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \tool_assessmentgen\local\run_manager
- * @covers     \tool_assessmentgen\local\planner
- * @covers     \tool_assessmentgen\local\driver\assign
  */
+#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\run_manager::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\planner::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\driver\assign::class)]
 final class run_test extends \advanced_testcase {
     /** @var int Fixed "today" so tests do not depend on the clock. */
     protected const ANCHOR = 1790000000;
