@@ -444,7 +444,8 @@ class run_manager {
 
     /**
      * Build one assessment. A failure deletes the half-made activity before it is reported, so a retry starts
-     * clean.
+     * clean; a database write error (a duplicate key, a deadlock) is retried once, since on a busy database it
+     * is usually momentary. A second failure is reported as before.
      *
      * @param \stdClass $course
      * @param array $assessment one entry of planner::plan_course()['assessments']
@@ -455,18 +456,25 @@ class run_manager {
     protected static function build(\stdClass $course, array $assessment, options $options, bool $outer): array {
         // No outer transaction: the log store only writes events once the outermost transaction commits, which
         // would be too late to backdate them.
-        try {
-            // Submission receipts would put one notification per submission in students' inboxes.
-            return settings_override::with(
-                ['assign' => ['submissionreceipts' => 0]],
-                fn() => registry::driver($assessment['type'])->build($course, $assessment, $options)
-            );
-        } catch (\Throwable $e) {
-            // A failure inside core's add_moduleinfo() leaves its transaction open; nothing written before it is
-            // discarded would survive, including the deletion below and the part's failure.
-            transactions::rollback_open($outer);
-            self::delete_partial((int)$course->id, $assessment['idnumber']);
-            throw $e;
+        for ($attempt = 1; ; $attempt++) {
+            try {
+                // Submission receipts would put one notification per submission in students' inboxes.
+                return settings_override::with(
+                    ['assign' => ['submissionreceipts' => 0]],
+                    fn() => registry::driver($assessment['type'])->build($course, $assessment, $options)
+                );
+            } catch (\Throwable $e) {
+                // A failure inside core's add_moduleinfo() leaves its transaction open; nothing written before it
+                // is discarded would survive, including the deletion below and the part's failure.
+                transactions::rollback_open($outer);
+                self::delete_partial((int)$course->id, $assessment['idnumber']);
+                if ($attempt === 1 && $e instanceof \dml_write_exception) {
+                    mtrace("tool_assessmentgen: retrying {$assessment['idnumber']} after a database write error: " .
+                        $e->getMessage());
+                    continue;
+                }
+                throw $e;
+            }
         }
     }
 

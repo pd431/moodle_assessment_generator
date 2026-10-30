@@ -148,4 +148,46 @@ final class failure_test extends \advanced_testcase {
         $this->assertFalse(\tool_assessmentgen\local\locks::held("course-{$course->id}"), 'Released afterwards');
         $this->assertSame('done', run_manager::get_by_tag('lock')->status);
     }
+
+    public function test_a_database_write_error_is_retried_once(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $course = $this->make_course('RETRY-202526');
+        $run = $this->queued_run('retry');
+        testing::arm('addmodule', testing::FAULT_DMLWRITE, 1);
+        ob_start();
+        try {
+            run_manager::execute_part((int)$run->id, (int)$course->id, 0);
+        } finally {
+            $output = ob_get_clean();
+        }
+        $this->assertStringContainsString('retrying AGEN-retry-', $output);
+        $this->assertSame('done', run_manager::get_by_tag('retry')->status);
+        // Two assessments, each once: the half-made first attempt was deleted.
+        $this->assertSame(2, $DB->count_records('course_modules', ['course' => $course->id]));
+        $this->assertSame(2, $DB->count_records('tool_assessmentgen_item', ['runid' => $run->id]));
+    }
+
+    public function test_a_second_database_write_error_fails_the_part(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $course = $this->make_course('TWICE-202526');
+        $run = $this->queued_run('twice');
+        testing::arm('addmodule', testing::FAULT_DMLWRITE, 2);
+        ob_start();
+        try {
+            run_manager::execute_part((int)$run->id, (int)$course->id, 0);
+            $this->fail('The second failure should have been thrown');
+        } catch (\dml_write_exception $e) {
+            $this->assertStringContainsString('fault: addmodule', $e->getMessage());
+        } finally {
+            ob_end_clean();
+        }
+        $run = run_manager::get_by_tag('twice');
+        $this->assertSame('failed', $run->status);
+        $this->assertStringContainsString('fault: addmodule', $run->error);
+        $this->assertSame(0, $DB->count_records('course_modules', ['course' => $course->id]));
+    }
 }

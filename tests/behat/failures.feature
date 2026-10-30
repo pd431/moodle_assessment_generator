@@ -28,6 +28,13 @@ Feature: Runs that fail on a busy database recover cleanly
     And no database transaction is left open
     And generator run "tx" should have "0" activities on the site
 
+  Scenario: A database write error is retried once
+    Given a generator run "retry" is queued with 1 part in course "HIS101-202526"
+    And the test fault "dml write error on the first attempt of assessment 1" is armed
+    When I run all adhoc tasks
+    Then the run "retry" has status "done"
+    And generator run "retry" should have "2" activities on the site
+
   Scenario: A part whose worker died is failed, not waited for
     Given a generator run "dead" has a part marked "running" with no lock held
     When I log in as "admin"
