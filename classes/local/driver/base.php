@@ -164,6 +164,10 @@ abstract class base {
         if (isguestuser($user) || $user->deleted || $user->suspended) {
             throw new \moodle_exception('cannotactas', 'tool_assessmentgen', '', fullname($user) . " (id $userid)");
         }
+        // Core caches each user's roles for the life of the process, and a long-running worker misses an enrolment
+        // another worker made in the same second it last acted as this user: the user would then have no right
+        // to submit in the new course. Marking the user dirty drops that cache, so their roles are read again.
+        mark_user_dirty($userid);
         \core\session\manager::set_user($user);
         try {
             return $fn();

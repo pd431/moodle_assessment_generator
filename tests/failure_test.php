@@ -190,4 +190,38 @@ final class failure_test extends \advanced_testcase {
         $this->assertStringContainsString('fault: addmodule', $run->error);
         $this->assertSame(0, $DB->count_records('course_modules', ['course' => $course->id]));
     }
+
+    public function test_a_user_enrolled_by_another_worker_can_act_in_the_new_course(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $gen = $this->getDataGenerator();
+        $course = $gen->create_course(['shortname' => 'OTHER-202526']);
+        $student = $gen->create_user();
+        $context = \context_course::instance($course->id);
+        $driver = new class extends \tool_assessmentgen\local\driver\assign {
+            /**
+             * Whether $userid can submit in $context, acting as them.
+             *
+             * @param int $userid
+             * @param \context $context
+             * @return bool
+             */
+            public function can_submit(int $userid, \context $context): bool {
+                return $this->as_user($userid, fn() => has_capability('mod/assign:submit', $context));
+            }
+        };
+        // This process has acted as the student, so their roles are cached: none in the course yet.
+        $this->assertFalse($driver->can_submit((int)$student->id, $context));
+
+        // Another worker enrols them: the rows appear, but nothing in this process is told. (Enrolling through core
+        // here would clear this process's cache itself, which is exactly what another process cannot do.)
+        $instance = $DB->get_record('enrol', ['courseid' => $course->id, 'enrol' => 'manual'], '*', MUST_EXIST);
+        $DB->insert_record('user_enrolments', (object)['enrolid' => $instance->id, 'userid' => $student->id, 'status' => 0,
+            'timestart' => 0, 'timeend' => 0, 'modifierid' => 2, 'timecreated' => time(), 'timemodified' => time()]);
+        $DB->insert_record('role_assignments', (object)['roleid' => $DB->get_field('role', 'id', ['shortname' => 'student']),
+            'contextid' => $context->id, 'userid' => $student->id, 'timemodified' => time(), 'modifierid' => 2,
+            'component' => '', 'itemid' => 0, 'sortorder' => 0]);
+        $this->assertTrue($driver->can_submit((int)$student->id, $context));
+    }
 }
