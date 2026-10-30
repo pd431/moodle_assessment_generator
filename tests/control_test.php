@@ -237,4 +237,24 @@ final class control_test extends \advanced_testcase {
         $this->assertSame('purged', run_manager::get_by_tag('ctl')->status);
         $this->assertSame(0, $DB->count_records_select('course_modules', $DB->sql_like('idnumber', '?'), ['AGEN-ctl-%']));
     }
+
+    public function test_purge_removes_the_runs_waiting_tasks(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $this->make_course('T1-202526');
+        $run = run_manager::create($this->options());
+        run_manager::queue($run);
+        $other = run_manager::create($this->options(['tag' => 'other']));
+        run_manager::queue($other);
+        $this->assertCount(6, \core\task\manager::get_adhoc_tasks(generate_course::class));
+
+        purger::purge($run, 1);
+        $left = \core\task\manager::get_adhoc_tasks(generate_course::class);
+        $this->assertCount(3, $left);
+        foreach ($left as $task) {
+            $this->assertSame((int)$other->id, (int)$task->get_custom_data()->runid);
+        }
+        $this->assertSame('purged', run_manager::get_by_tag('ctl')->status);
+    }
 }

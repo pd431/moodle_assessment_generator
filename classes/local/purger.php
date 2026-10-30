@@ -69,6 +69,7 @@ class purger {
         $runid = (int)$run->id;
         $DB->update_record('tool_assessmentgen_run', (object)['id' => $runid, 'status' => 'purging', 'timemodified' => time()]);
         self::wait_for_parts($runid, $wait);
+        self::delete_tasks($runid);
 
         $options = run_manager::options_for($run);
         self::refresh_statistics();
@@ -269,6 +270,25 @@ class purger {
         // LIKE alone would also match a run tagged "<tag>-<n>"; the exact pattern does not.
         $pattern = '/^' . preg_quote($prefix, '/') . $suffix . '$/';
         return array_map('intval', array_keys(array_filter($rows, fn($idnumber) => preg_match($pattern, $idnumber))));
+    }
+
+    /**
+     * Delete the run's waiting background tasks (its setup and its parts), so cron does not start them after the
+     * purge. The purge's own task is left to finish.
+     *
+     * @param int $runid
+     */
+    protected static function delete_tasks(int $runid): void {
+        global $DB;
+        foreach ($DB->get_records('task_adhoc', ['component' => 'tool_assessmentgen']) as $task) {
+            if (ltrim($task->classname, '\\') === \tool_assessmentgen\task\purge_run::class) {
+                continue;
+            }
+            $data = json_decode((string)$task->customdata);
+            if ((int)($data->runid ?? 0) === $runid) {
+                $DB->delete_records('task_adhoc', ['id' => $task->id]);
+            }
+        }
     }
 
     /**
