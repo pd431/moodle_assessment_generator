@@ -61,15 +61,41 @@ abstract class base {
         return $DB->record_exists('modules', ['name' => static::modname(), 'visible' => 1]);
     }
 
+    /** @var int Longest wait, in seconds, for another part of the same course to finish its assessment. */
+    public const COURSE_LOCK_WAIT = 1800;
+
     /**
-     * Create the activity and carry out every unit of the plan.
+     * Build one assessment: create the activity and carry out every unit of the plan, holding the course's lock
+     * throughout.
+     *
+     * Parts of one course run in parallel cron workers. Every phase that writes grades (submitting a quiz attempt,
+     * saving an assignment grade, releasing peer assessment grades, creating the activity's grade item) regrades
+     * the whole course, and two regrades of one course at once fail on MariaDB with a duplicate key on
+     * grade_grades or a deadlock in grade category aggregation. So one assessment is built at a time per course;
+     * parts of different courses are unaffected.
      *
      * @param \stdClass $course
      * @param array $assessment one entry of planner::plan_course()['assessments']
      * @param options $options
      * @return array{cmid: int, submitted: int, drafts: int, grades: int, extensions: int}
      */
-    abstract public function execute(\stdClass $course, array $assessment, options $options): array;
+    final public function build(\stdClass $course, array $assessment, options $options): array {
+        return \tool_assessmentgen\local\locks::with(
+            "course-{$course->id}",
+            fn() => $this->execute($course, $assessment, $options),
+            self::COURSE_LOCK_WAIT
+        );
+    }
+
+    /**
+     * Create the activity and carry out every unit of the plan. Called by build(), which holds the course's lock.
+     *
+     * @param \stdClass $course
+     * @param array $assessment one entry of planner::plan_course()['assessments']
+     * @param options $options
+     * @return array{cmid: int, submitted: int, drafts: int, grades: int, extensions: int}
+     */
+    abstract protected function execute(\stdClass $course, array $assessment, options $options): array;
 
     /**
      * Create the module with add_moduleinfo() in a random existing section.
@@ -104,12 +130,10 @@ abstract class base {
             'completionexpected' => 0,
             'completionpassgrade' => 0,
         ], $settings);
-        // Parts of a run can build in the same course at once. Adding modules one at a time keeps the course's
-        // section sequences and grade item order intact; tags are shared site-wide, so they are locked too.
-        $moduleinfo = \tool_assessmentgen\local\locks::with(
-            "course-{$course->id}",
-            fn() => add_moduleinfo($moduleinfo, $course)
-        );
+        // build() holds the course's lock, so parts of a run add modules to a course one at a time, which keeps
+        // the course's section sequences and grade item order intact. Tags are shared site-wide, so they are
+        // locked too.
+        $moduleinfo = add_moduleinfo($moduleinfo, $course);
         // Where a busy database fails while the activity is half made; tests arm faults here.
         \tool_assessmentgen\local\testing::fault('addmodule', ['courseid' => (int)$course->id]);
         if (!empty($assessment['assessmenttag'])) {

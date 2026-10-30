@@ -459,7 +459,7 @@ class run_manager {
             // Submission receipts would put one notification per submission in students' inboxes.
             return settings_override::with(
                 ['assign' => ['submissionreceipts' => 0]],
-                fn() => registry::driver($assessment['type'])->execute($course, $assessment, $options)
+                fn() => registry::driver($assessment['type'])->build($course, $assessment, $options)
             );
         } catch (\Throwable $e) {
             // A failure inside core's add_moduleinfo() leaves its transaction open; nothing written before it is

@@ -136,4 +136,16 @@ final class failure_test extends \advanced_testcase {
         });
         $this->assertSame(1, run_manager::reap_dead_parts((int)$run->id));
     }
+
+    public function test_the_course_lock_is_held_while_an_assessment_is_built(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $course = $this->make_course('LOCK-202526');
+        $run = $this->queued_run('lock');
+        testing::arm('addmodule', testing::FAULT_LOCKCHECK, 2);
+        run_manager::execute_part((int)$run->id, (int)$course->id, 0);
+        $this->assertSame(['courselockheld' => true], testing::observed('addmodule'));
+        $this->assertFalse(\tool_assessmentgen\local\locks::held("course-{$course->id}"), 'Released afterwards');
+        $this->assertSame('done', run_manager::get_by_tag('lock')->status);
+    }
 }

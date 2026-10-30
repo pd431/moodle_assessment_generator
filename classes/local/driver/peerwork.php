@@ -104,7 +104,7 @@ class peerwork extends base {
      * @param options $options
      * @return array
      */
-    public function execute(\stdClass $course, array $a, options $options): array {
+    protected function execute(\stdClass $course, array $a, options $options): array {
         global $CFG, $DB;
         require_once($CFG->dirroot . '/mod/peerwork/locallib.php');
 
