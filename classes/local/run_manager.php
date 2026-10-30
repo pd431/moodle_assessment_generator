@@ -359,7 +359,7 @@ class run_manager {
         if (!$row || $row->status === 'done' || !self::active($runid)) {
             return $totals;
         }
-        locks::try("part-$runid-$courseid-$part", function () use ($DB, $runid, $courseid, $part, $row, &$totals) {
+        locks::try(self::part_lock($runid, $courseid, $part), function () use ($DB, $runid, $courseid, $part, $row, &$totals) {
             $outer = transactions::open();
             $run = $DB->get_record('tool_assessmentgen_run', ['id' => $runid], '*', MUST_EXIST);
             $DB->set_field_select('tool_assessmentgen_run', 'status', 'running', "id = ? AND status = 'queued'", [$runid]);
@@ -534,6 +534,18 @@ class run_manager {
     }
 
     /**
+     * The lock a worker holds while it builds a part. Holding it is what "running" means.
+     *
+     * @param int $runid
+     * @param int $courseid
+     * @param int $part
+     * @return string
+     */
+    public static function part_lock(int $runid, int $courseid, int $part): string {
+        return "part-$runid-$courseid-$part";
+    }
+
+    /**
      * Mark the parts whose worker died as failed, so nothing waits for them and the run can be resumed.
      *
      * A part is "running" only while its worker holds the part's lock, so a running part whose lock can be taken
@@ -547,7 +559,7 @@ class run_manager {
         global $DB;
         $dead = 0;
         foreach ($DB->get_records('tool_assessmentgen_part', ['runid' => $runid, 'status' => 'running']) as $row) {
-            $key = "part-$runid-{$row->courseid}-{$row->part}";
+            $key = self::part_lock($runid, (int)$row->courseid, (int)$row->part);
             if (locks::held($key)) {
                 // This process is its worker.
                 continue;

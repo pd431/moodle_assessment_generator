@@ -130,7 +130,7 @@ final class failure_test extends \advanced_testcase {
         $run = $this->queued_run('live');
         $DB->set_field('tool_assessmentgen_part', 'status', 'running', ['runid' => $run->id]);
         // As the worker itself sees it while it holds the part's lock.
-        \tool_assessmentgen\local\locks::with("part-{$run->id}-{$course->id}-0", function () use ($run) {
+        \tool_assessmentgen\local\locks::with(run_manager::part_lock((int)$run->id, (int)$course->id, 0), function () use ($run) {
             $this->assertSame(0, run_manager::reap_dead_parts((int)$run->id));
             $this->assertSame(['running' => 1], run_manager::part_counts((int)$run->id));
         });

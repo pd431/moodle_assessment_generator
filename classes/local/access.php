@@ -31,7 +31,7 @@ class access {
      */
     public static function allowed(): bool {
         global $CFG;
-        if ((defined('PHPUNIT_TEST') && PHPUNIT_TEST) || (defined('BEHAT_SITE_RUNNING') && BEHAT_SITE_RUNNING)) {
+        if (testing::enabled()) {
             return true;
         }
         return !empty($CFG->tool_assessmentgen_allow);
