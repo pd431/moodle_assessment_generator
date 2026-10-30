@@ -267,7 +267,7 @@ class student_pool {
     /**
      * How many of the run's courses each pool member was planned into, for previews.
      *
-     * @param array<int, int> $counts courses per pool id, from the course plans
+     * @param array $counts courses per pool id, from the course plans
      * @param int $pool pool size
      * @return array{used: int, min: int, mean: float, max: int, pool: int}
      */

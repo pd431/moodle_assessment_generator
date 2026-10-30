@@ -207,7 +207,7 @@ class planner {
      * @param random $rng
      * @param array $a assessment with common fields
      * @param array $people students and markers
-     * @param array<string|int, int[]> $groups groups to submit as, empty for individual submission
+     * @param array $groups groups to submit as (group id => member ids), empty for individual submission
      * @param string|int $grouping 'new' when the groups are generated ones
      * @return array
      */
@@ -244,7 +244,7 @@ class planner {
      * @param random $rng
      * @param array $a
      * @param int[] $markers
-     * @param array<string|int, int[]> $groups
+     * @param array $groups group id => member ids
      * @param string|int $grouping
      * @return array
      */
@@ -656,7 +656,7 @@ class planner {
     /**
      * Add one assessment, with its units, to summary totals.
      *
-     * @param array<string, int> $t totals from summarise()
+     * @param array $t totals from summarise()
      * @param array $a
      */
     protected static function add_to_summary(array &$t, array $a): void {

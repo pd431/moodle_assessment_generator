@@ -30,7 +30,7 @@ class settings_override {
     /**
      * Run code with some plugin settings forced.
      *
-     * @param array<string, array<string, mixed>> $overrides plugin => [name => value]
+     * @param array $overrides plugin => [name => value]
      * @param callable $fn
      * @return mixed what $fn returns
      */

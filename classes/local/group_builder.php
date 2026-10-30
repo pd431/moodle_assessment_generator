@@ -34,7 +34,7 @@ class group_builder {
      * @param options $options
      * @param int $courseid
      * @param int[] $students
-     * @param array<int, int[]> $existing existing groupid => student members
+     * @param array $existing existing group id => student members
      * @return array{use: array<string, int[]>, new: array, grouping: ?array}
      *     use: group key => members, where a key is an existing group id or "new:<n>"
      */

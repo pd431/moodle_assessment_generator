@@ -38,7 +38,7 @@ class enroller {
      * @param random $rng
      * @param options $options
      * @param int $courseid
-     * @param array{students: int[], markers: int[]} $people current participants
+     * @param array $people current participants: students and markers, each a list of user ids
      * @return array{students: int[], markers: int[], convenors: int[]}
      */
     public static function plan(random $rng, options $options, int $courseid, array $people): array {
@@ -110,7 +110,7 @@ class enroller {
      *
      * @param int $runid
      * @param int $courseid
-     * @param array{students: int[], markers: int[], convenors?: int[]} $plan
+     * @param array $plan students, markers and (optionally) convenors to enrol, each a list of user ids
      * @param int $time enrolment date to record
      * @return int number of people enrolled now
      */
