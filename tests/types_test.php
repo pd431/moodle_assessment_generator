@@ -390,4 +390,34 @@ final class types_test extends \advanced_testcase {
         $this->assertSame(0, $DB->count_records('quiz', ['course' => $course->id]));
         $this->assertSame($questions, $DB->count_records('question'));
     }
+
+    public function test_allocated_markers_are_recorded_for_each_student(): void {
+        global $DB;
+        $this->resetAfterTest();
+        ['course' => $course] = $this->make_course('AL-202526', 10);
+        [$run, $plan] = $this->generate(['courseids' => [$course->id], 'seed' => 4, 'tag' => 'al', 'types' => ['assign'],
+            'minper' => 2, 'maxper' => 2, 'workflowrate' => 1, 'allocationrate' => 1, 'teamrate' => 0, 'blindrate' => 0]);
+        $this->assertSame(2, $run->totals['assessments']);
+        $recorded = 0;
+        foreach ($plan['assessments'] as $a) {
+            $this->assertTrue($a['allocation']);
+            $instance = $DB->get_field('course_modules', 'instance', ['course' => $course->id, 'idnumber' => $a['idnumber']],
+                MUST_EXIST);
+            foreach ($a['units'] as $u) {
+                if (!$u['allocatedmarker']) {
+                    continue;
+                }
+                if ($DB->get_manager()->table_exists('assign_allocated_marker')) {
+                    // Moodle 5.1 and later.
+                    $this->assertTrue($DB->record_exists('assign_allocated_marker', ['assignment' => $instance,
+                        'student' => $u['userid'], 'marker' => $u['allocatedmarker']]), "Marker of user {$u['userid']}");
+                } else {
+                    $this->assertEquals($u['allocatedmarker'], $DB->get_field('assign_user_flags', 'allocatedmarker',
+                        ['assignment' => $instance, 'userid' => $u['userid']]), "Marker of user {$u['userid']}");
+                }
+                $recorded++;
+            }
+        }
+        $this->assertGreaterThan(0, $recorded);
+    }
 }
