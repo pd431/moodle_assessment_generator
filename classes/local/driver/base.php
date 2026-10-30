@@ -110,6 +110,8 @@ abstract class base {
             "course-{$course->id}",
             fn() => add_moduleinfo($moduleinfo, $course)
         );
+        // Where a busy database fails while the activity is half made; tests arm faults here.
+        \tool_assessmentgen\local\testing::fault('addmodule', ['courseid' => (int)$course->id]);
         if (!empty($assessment['assessmenttag'])) {
             // Set directly rather than through add_moduleinfo(), which skips tags when the site has them turned off.
             \tool_assessmentgen\local\locks::with('tags', fn() => \core_tag_tag::set_item_tags(
