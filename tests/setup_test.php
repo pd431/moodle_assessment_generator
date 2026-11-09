@@ -25,19 +25,25 @@ use tool_assessmentgen\local\student_pool;
 use tool_assessmentgen\task\generate_course;
 use tool_assessmentgen\task\setup_run;
 
-/**
- * Tests for runs on a brand-new site: created courses, generated staff, site checks, and purging all of it.
- *
- * @package    tool_assessmentgen
- * @copyright  2026
- * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
 #[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\course_factory::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\site_checks::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\enroller::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\run_manager::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\purger::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\task\setup_run::class)]
+/**
+ * Tests for runs on a brand-new site: created courses, generated staff, site checks, and purging all of it.
+ *
+ * @package    tool_assessmentgen
+ * @copyright  2026
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers     \tool_assessmentgen\local\course_factory
+ * @covers     \tool_assessmentgen\local\site_checks
+ * @covers     \tool_assessmentgen\local\enroller
+ * @covers     \tool_assessmentgen\local\run_manager
+ * @covers     \tool_assessmentgen\local\purger
+ * @covers     \tool_assessmentgen\task\setup_run
+ */
 final class setup_test extends \advanced_testcase {
     /** @var int Fixed "today": 2026-09-21, in the 2026/27 academic year. */
     protected const ANCHOR = 1790000000;

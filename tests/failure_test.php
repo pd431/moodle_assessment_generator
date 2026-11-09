@@ -21,16 +21,19 @@ use tool_assessmentgen\local\purger;
 use tool_assessmentgen\local\run_manager;
 use tool_assessmentgen\local\testing;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\run_manager::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\transactions::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\testing::class)]
 /**
  * Tests for what happens when building an assessment fails on a busy database.
  *
  * @package    tool_assessmentgen
  * @copyright  2026
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers     \tool_assessmentgen\local\run_manager
+ * @covers     \tool_assessmentgen\local\transactions
+ * @covers     \tool_assessmentgen\local\testing
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\run_manager::class)]
-#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\transactions::class)]
-#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\testing::class)]
 final class failure_test extends \advanced_testcase {
     /** @var int Fixed "today". */
     protected const ANCHOR = 1790000000;

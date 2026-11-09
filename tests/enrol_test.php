@@ -22,16 +22,19 @@ use tool_assessmentgen\local\options;
 use tool_assessmentgen\local\planner;
 use tool_assessmentgen\local\run_manager;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\enroller::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\course_selector::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\run_manager::class)]
 /**
  * Tests for who takes part, enrolling people into empty courses, and the run report.
  *
  * @package    tool_assessmentgen
  * @copyright  2026
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers     \tool_assessmentgen\local\enroller
+ * @covers     \tool_assessmentgen\local\course_selector
+ * @covers     \tool_assessmentgen\local\run_manager
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\enroller::class)]
-#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\course_selector::class)]
-#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\run_manager::class)]
 final class enrol_test extends \advanced_testcase {
     /** @var int Fixed "today". */
     protected const ANCHOR = 1790000000;

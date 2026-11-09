@@ -23,16 +23,19 @@ use tool_assessmentgen\local\random;
 use tool_assessmentgen\local\run_manager;
 use tool_assessmentgen\local\student_pool;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\student_pool::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\enroller::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\run_manager::class)]
 /**
  * Tests for generated students: cohort sizes, the shared pool, the accounts and their purge.
  *
  * @package    tool_assessmentgen
  * @copyright  2026
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers     \tool_assessmentgen\local\student_pool
+ * @covers     \tool_assessmentgen\local\enroller
+ * @covers     \tool_assessmentgen\local\run_manager
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\student_pool::class)]
-#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\enroller::class)]
-#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\run_manager::class)]
 final class students_test extends \advanced_testcase {
     /** @var int Fixed "today". */
     protected const ANCHOR = 1790000000;

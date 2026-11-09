@@ -22,16 +22,19 @@ use tool_assessmentgen\local\planner;
 use tool_assessmentgen\local\registry;
 use tool_assessmentgen\local\run_manager;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\group_builder::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\driver\peerwork::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\driver\quiz::class)]
 /**
  * Tests for generated groups, peer assessment and quizzes.
  *
  * @package    tool_assessmentgen
  * @copyright  2026
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers     \tool_assessmentgen\local\group_builder
+ * @covers     \tool_assessmentgen\local\driver\peerwork
+ * @covers     \tool_assessmentgen\local\driver\quiz
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\group_builder::class)]
-#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\driver\peerwork::class)]
-#[\PHPUnit\Framework\Attributes\CoversClass(\tool_assessmentgen\local\driver\quiz::class)]
 final class types_test extends \advanced_testcase {
     /** @var int Fixed "today" so tests do not depend on the clock. */
     protected const ANCHOR = 1790000000;
