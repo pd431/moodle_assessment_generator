@@ -199,6 +199,18 @@ class behat_tool_assessmentgen extends behat_base {
     }
 
     /**
+     * Skip the scenario on a site without the activity type (mod_peerwork is not part of Moodle).
+     *
+     * @Given /^the activity type "(?P<type>[^"]*)" is available on this site$/
+     * @param string $type
+     */
+    public function the_activity_type_is_available(string $type): void {
+        if (!\tool_assessmentgen\local\registry::available([$type])) {
+            throw new \Moodle\BehatExtension\Exception\SkippedException("Activity type $type is not installed");
+        }
+    }
+
+    /**
      * Purge a run in the foreground.
      *
      * @When /^I purge run "(?P<tag>[^"]*)"$/

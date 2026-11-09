@@ -107,7 +107,8 @@ Feature: Generate assessment data on existing courses
     And I should see "Finished"
 
   Scenario: Peer assessment uses generated groups that purge removes
-    Given the following "users" exist:
+    Given the activity type "peerwork" is available on this site
+    And the following "users" exist:
       | username | firstname | lastname |
       | student3 | Sol       | Student  |
       | student4 | Sid       | Student  |
