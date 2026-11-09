@@ -83,6 +83,11 @@ final class setup_test extends \advanced_testcase {
         foreach ($rows as $row) {
             $roles[$row->shortname][] = (int)$row->userid;
         }
+        // Databases return the rows in different orders.
+        ksort($roles);
+        foreach ($roles as &$ids) {
+            sort($ids);
+        }
         return $roles;
     }
 
